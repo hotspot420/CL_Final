@@ -569,17 +569,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    document.getElementById('see-results-button').onclick = function() {
-        console.log("=== See Results Button Clicked ===");
-        console.log("Current scores state:", scores);
-        
-        if (confirm('Are you sure you want to see your results now? Continuing the quiz will provide more accurate results.')) {
-            console.log("User confirmed - proceeding to display results");
+    // Update the see-results button event listener
+document.getElementById('see-results-button').addEventListener('click', function() {
+    const currentQuestionNum = currentQuestion + 1;
+    
+    // Don't show warning if we're at the last question
+    if (currentQuestionNum >= questions.length) {
+        fadeOut('quiz-section', function() {
             displayResult();
-        } else {
-            console.log("User cancelled - continuing quiz");
+            fadeIn('result-section');
+        });
+        return;
+    }
+
+    // Show warning if not all questions are answered
+    const remainingQuestions = questions.length - currentQuestionNum;
+    const confirmMessage = `You've answered ${currentQuestionNum} out of ${questions.length} questions. ` +
+        `Completing more questions will give you a more accurate character match. ` +
+        `\n\nDo you want to see your results now, or continue answering questions? You can stop at any time.`;
+        
+    if (confirm(confirmMessage)) {
+        fadeOut('quiz-section', function() {
+            displayResult();
+            fadeIn('result-section');
+        });
         }
-    };
+    });
 });
 
 // Update displayQuestion function
@@ -690,48 +705,54 @@ function calculateScores() {
 function findBestVantiroMatch(categoryAverages) {
     let bestMatch = null;
     let lowestDeviance = Infinity;
-    let totalPossibleDeviance = 0;  // Maximum possible deviance
+    let totalDeviance = 0;
+    let matchedCategories = 0;
 
     for (const [vantiroType, ranges] of Object.entries(vantiroRanges)) {
-        let totalDeviance = 0;
-        let validRanges = 0;
+        let currentDeviance = 0;
+        let categoriesChecked = 0;
 
         for (const [category, range] of Object.entries(ranges)) {
             if (categoryAverages[category]) {
                 const score = categoryAverages[category];
-                const midpoint = (range.min + range.max) / 2;
-                const maxPossibleDeviance = Math.max(
-                    Math.abs(5 - midpoint),  // Maximum possible distance above
-                    Math.abs(1 - midpoint)   // Maximum possible distance below
-                );
-                totalPossibleDeviance += maxPossibleDeviance;
-
+                categoriesChecked++;
+                
+                // Calculate how far the score is from the ideal range
                 if (score < range.min) {
-                    totalDeviance += range.min - score;
+                    currentDeviance += range.min - score;
                 } else if (score > range.max) {
-                    totalDeviance += score - range.max;
+                    currentDeviance += score - range.max;
                 }
-                validRanges++;
+                // Add a small penalty even for scores within range, based on distance from midpoint
+                else {
+                    const midpoint = (range.min + range.max) / 2;
+                    currentDeviance += Math.abs(score - midpoint) * 0.5; // Half weight for within-range deviation
+                }
             }
         }
 
-        const avgDeviance = validRanges > 0 ? totalDeviance / validRanges : Infinity;
+        // Calculate average deviance for this type
+        const avgDeviance = categoriesChecked > 0 ? currentDeviance / categoriesChecked : Infinity;
         
         if (avgDeviance < lowestDeviance) {
             lowestDeviance = avgDeviance;
             bestMatch = vantiroType;
+            totalDeviance = currentDeviance;
+            matchedCategories = categoriesChecked;
         }
     }
 
-    // Calculate confidence as a percentage, where 0 deviance = 100% confidence
+    // Calculate confidence as a percentage
+    // Maximum possible deviance per category is 4 (from 1 to 5 scale)
+    const maxPossibleDeviance = matchedCategories * 4;
     const confidence = Math.max(0, Math.min(100, 
-        (1 - (lowestDeviance / (totalPossibleDeviance / Object.keys(categoryAverages).length))) * 100
+        (1 - (totalDeviance / maxPossibleDeviance)) * 100
     ));
 
     return { 
         type: bestMatch, 
         deviance: lowestDeviance,
-        confidence: confidence 
+        confidence: Math.round(confidence * 0.8) // Scale down confidence by 20% to be more realistic
     };
 }
 
@@ -746,26 +767,37 @@ function displayResult() {
 
     if (!matchResult || !matchResult.type) {
         console.error("No valid Vantiro match found");
-        document.getElementById('result-section').innerHTML = `
-            <h3>Unable to determine Vantiro type</h3>
-            <p>Please try answering more questions for a more accurate result.</p>
-        `;
+        const resultSection = document.getElementById('result-section');
+        if (resultSection) {
+            resultSection.innerHTML = `
+                <h3>Unable to determine Vantiro type</h3>
+                <p>Please try answering more questions for a more accurate result.</p>
+            `;
+        }
         return;
     }
 
-    // Hide quiz section
-    document.querySelector('.question-section').style.display = 'none';
+    // Safely hide quiz section if it exists
+    const quizSection = document.querySelector('.question-section');
+    if (quizSection) {
+        quizSection.style.display = 'none';
+    }
     
     // Extract the Vantiro number from the type (e.g., "Vantiro-6" -> 6)
     const vantiroNumber = parseInt(matchResult.type.split('-')[1]);
     
-    // Create the results HTML first
+    // Create the results HTML
     const resultSection = document.getElementById('result-section');
+    if (!resultSection) {
+        console.error("Result section not found");
+        return;
+    }
+
     resultSection.innerHTML = `
         <div class="results-container">
             <div class="results-text">
                 <h3>You Are: ${matchResult.type}</h3>
-                <p class="confidence">Confidence: ${(100 - matchResult.deviance * 100).toFixed(1)}%</p>
+                <p class="confidence">Confidence: ${Math.round(matchResult.confidence)}%</p>
                 <p class="type-description">${cards[matchResult.type]?.description || 'Description not available.'}</p>
             </div>
             <div class="results-image">
@@ -790,18 +822,18 @@ function displayResult() {
         console.error("Error loading gallery images:", err);
     }
 
-    // Simple p5 sketch that draws circles based on Vantiro number
-    const sketch = (p) => {
+    // Initialize p5 sketch
+    new p5((p) => {
         p.setup = () => {
             const canvas = p.createCanvas(800, 400);
             canvas.parent('p5-canvas');
-            p.background(240);  // Light gray background
-            p.noLoop();  // We only need to draw once
+            p.background(240);
+            p.noLoop();
         };
 
         p.draw = () => {
             p.background(240);
-            p.fill(100);  // Gray circles
+            p.fill(100);
             p.noStroke();
             
             const diameter = 40;
@@ -809,15 +841,11 @@ function displayResult() {
             const startX = (p.width - (vantiroNumber * spacing - (spacing - diameter))) / 2;
             const y = p.height / 2;
             
-            // Draw circles equal to the Vantiro number
             for (let i = 0; i < vantiroNumber; i++) {
                 p.circle(startX + (i * spacing), y, diameter);
             }
         };
-    };
-
-    // Create new p5 instance
-    new p5(sketch);
+    });
 }
 
 function getRandomImage(vantiro) {
@@ -1412,4 +1440,43 @@ function logQuestionCoverage(index) {
     console.log('Categories:', currentQ.category);
     console.log('Leans:', currentQ.lean || 'None');
 }
+
+// Update these functions at the beginning of your script
+function fadeOut(elementId, callback) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error('Element not found:', elementId);
+        return;
+    }
+    element.classList.remove('active');
+    setTimeout(() => {
+        element.style.display = 'none';
+        if (callback) callback();
+    }, 500);
+}
+
+function fadeIn(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error('Element not found:', elementId);
+        return;
+    }
+    element.style.display = 'block';
+    setTimeout(() => {
+        element.classList.add('active');
+    }, 10);
+}
+
+// Add these event listeners after your DOMContentLoaded event
+document.getElementById('continue-btn').addEventListener('click', function() {
+    fadeOut('intro-section', function() {
+        fadeIn('second-section');
+    });
+});
+
+document.getElementById('ready-btn').addEventListener('click', function() {
+    fadeOut('second-section', function() {
+        fadeIn('quiz-section');
+    });
+});
 
