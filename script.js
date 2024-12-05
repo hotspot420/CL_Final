@@ -499,100 +499,78 @@ class PromptDeployment {
 
 // Remove the duplicate initializeQuiz function and consolidate initialization
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize scores objects
-    const categories = ['interpersonalStyle', 'flexibility', 'interestBreadth', 'openness', 
-                       'selfAwareness', 'beliefInCapability', 'drive', 'selfAdvocacy', 
-                       'collaboration', 'vulnerability', 'playfulness', 'selfEsteem',
-                       'perceptual', 'relationships', 'emotions'];
-    
-    categories.forEach(category => {
-        if (!scores[category]) {  // Only initialize if not already set
-            scores[category] = { total: 0, count: 0 };
-        }
-    });
+    // Initialize scores first
+    initializeScores();
 
-    const leans = ['appreciationOfBeauty', 'bravery', 'creativity', 'curiosity', 'fairness',
-                  'forgiveness', 'gratitude', 'honesty', 'hope', 'humility', 'humor',
-                  'judgment', 'kindness', 'leadership', 'love', 'loveOfLearning',
-                  'perseverance', 'perspective', 'prudence', 'selfRegulation',
-                  'socialIntelligence', 'spirituality', 'teamwork', 'zest'];
-    
-    leans.forEach(lean => {
-        if (!leanScores[lean]) {  // Only initialize if not already set
-            leanScores[lean] = { total: 0, count: 0 };
-        }
-    });
+    // Randomly select and set background
+    const bgNum = Math.random() < 0.5 ? 1 : 2;
+    const bgImage = `background_${bgNum}.png`;
+    document.body.style.backgroundImage = `url('${bgImage}')`;
+    console.log('Set background image:', bgImage);
 
-    // Load both cards and questions
+    // Initialize the first section as active
+    const introSection = document.getElementById('intro-section');
+    if (introSection) {
+        introSection.classList.add('active');
+        introSection.style.display = 'block';
+    }
+
+    // Set up section transitions
+    const continueBtn = document.getElementById('continue-btn');
+    const readyBtn = document.getElementById('ready-btn');
+
+    if (continueBtn) {
+        continueBtn.addEventListener('click', function() {
+            fadeOut('intro-section', function() {
+                fadeIn('second-section');
+            });
+        });
+    }
+
+    if (readyBtn) {
+        readyBtn.addEventListener('click', function() {
+            fadeOut('second-section', function() {
+                fadeIn('quiz-section');
+                displayQuestion(currentQuestion);
+            });
+        });
+    }
+
+    // Load questions
     Promise.all([
         fetch('cards.json').then(response => response.json()),
         fetch('questions.json').then(response => response.json())
     ]).then(([cardsData, questionsData]) => {
         cards = cardsData;
         questions = optimizeQuestionOrder(questionsData);
-        
-        // Debug logging
-        console.log("Total questions loaded:", questions.length);
-        console.log("First question:", questions[0]);
-        console.log("Last question:", questions[questions.length - 1]);
-        console.log("Question 40:", questions[39]);
-        console.log("Question 41:", questions[40]);
-        
         displayQuestion(currentQuestion);
     }).catch(error => {
         console.error('Error loading data:', error);
-        document.getElementById('question-container').innerHTML = 
-            '<p class="error-message">Error loading questions. Please refresh the page.</p>';
     });
 
-    // Set up button handlers
-    document.getElementById('next-button').onclick = function() {
-        const slider = document.querySelector('.quiz-slider');
-        if (slider) {
-            const value = parseFloat(slider.value);
-            recordAnswer(value, currentQuestion);
-        }
+    // Add See Results button handler
+    document.getElementById('see-results-button').addEventListener('click', function() {
+        const currentQuestionNum = currentQuestion + 1;
         
-        if (currentQuestion >= questions.length - 1) {
-            displayResult();
-        } else {
-            currentQuestion++;
-            displayQuestion(currentQuestion);
+        if (currentQuestionNum >= questions.length) {
+            fadeOut('quiz-section', function() {
+                displayResult();
+                fadeIn('result-section');
+            });
+            return;
         }
-    };
 
-    document.getElementById('back-button').onclick = function() {
-        if (currentQuestion > 0) {
-            answerHistory.pop();
-            currentQuestion--;
-            displayQuestion(currentQuestion);
-        }
-    };
-
-    // Update the see-results button event listener
-document.getElementById('see-results-button').addEventListener('click', function() {
-    const currentQuestionNum = currentQuestion + 1;
-    
-    // Don't show warning if we're at the last question
-    if (currentQuestionNum >= questions.length) {
-        fadeOut('quiz-section', function() {
-            displayResult();
-            fadeIn('result-section');
-        });
-        return;
-    }
-
-    // Show warning if not all questions are answered
-    const remainingQuestions = questions.length - currentQuestionNum;
-    const confirmMessage = `You've answered ${currentQuestionNum} out of ${questions.length} questions. ` +
-        `Completing more questions will give you a more accurate character match. ` +
-        `\n\nDo you want to see your results now, or continue answering questions? You can stop at any time.`;
-        
-    if (confirm(confirmMessage)) {
-        fadeOut('quiz-section', function() {
-            displayResult();
-            fadeIn('result-section');
-        });
+        // Show warning if not all questions are answered
+        const remainingQuestions = questions.length - currentQuestionNum;
+        const confirmMessage = `You've answered ${currentQuestionNum} out of ${questions.length} questions. ` +
+            `Completing more questions will give you a more accurate character match. ` +
+            `\n\nDo you want to see your results now, or continue answering questions?`;
+            
+        if (confirm(confirmMessage)) {
+            fadeOut('quiz-section', function() {
+                displayResult();
+                fadeIn('result-section');
+            });
         }
     });
 });
@@ -610,12 +588,30 @@ function displayQuestion(index) {
         return;
     }
 
-    console.log(`Displaying question ${index + 1}:`, {
-        id: question.id,
-        question: question.question,
-        categories: question.category,
-        leans: question.lean
-    });
+    // Update progress bar and text
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const seeResultsButton = document.getElementById('see-results-button');
+    
+    if (progressBar && progressText) {
+        progressBar.value = index + 1;
+        progressText.textContent = `${index + 1}/70`;
+        
+        // Show results button after minimum questions (21)
+        if (index >= 20) {
+            progressBar.classList.remove('incomplete');
+            progressBar.classList.add('complete');
+            if (seeResultsButton) {
+                seeResultsButton.style.display = 'block';
+            }
+        } else {
+            progressBar.classList.remove('complete');
+            progressBar.classList.add('incomplete');
+            if (seeResultsButton) {
+                seeResultsButton.style.display = 'none';
+            }
+        }
+    }
 
     const questionContainer = document.getElementById('question-container');
     questionContainer.innerHTML = `
@@ -632,47 +628,27 @@ function displayQuestion(index) {
         </div>
     `;
 
+    // Set slider value from history if available
     const slider = document.getElementById('question-slider');
     if (slider) {
-        // Only set a previous value if we're going backwards
         if (answerHistory[index]) {
             slider.value = answerHistory[index].value;
         } else {
-            slider.value = "3"; // Force neutral start for new questions
+            slider.value = "3";
         }
-        
-        slider.addEventListener('input', function() {
-            const value = Math.round(this.value);
-            this.value = value;
-        });
     }
 
-    // Update progress and button visibility
-    const progressBar = document.getElementById('progress-bar');
-    const progressText = document.getElementById('progress-text');
-    const nextButton = document.getElementById('next-button');
+    // Update button states
     const backButton = document.getElementById('back-button');
-    const seeResultsButton = document.getElementById('see-results-button');
+    const nextButton = document.getElementById('next-button');
     
-    if (progressBar && progressText) {
-        progressBar.value = index + 1;
-        progressText.textContent = `${index + 1}/70`;
-        
-        // Show results button after 24 questions but keep next button visible
-        if (index >= 23) {
-            progressBar.classList.remove('incomplete');
-            progressBar.classList.add('complete');
-            seeResultsButton.style.display = 'block';
-        } else {
-            progressBar.classList.remove('complete');
-            progressBar.classList.add('incomplete');
-            seeResultsButton.style.display = 'none';
-        }
+    if (backButton) {
+        backButton.disabled = index === 0;
     }
-
-    // Keep next button visible until the very last question
-    nextButton.style.display = index >= questions.length - 1 ? 'none' : 'block';
-    backButton.disabled = index === 0;
+    
+    if (nextButton) {
+        nextButton.style.display = index >= questions.length - 1 ? 'none' : 'block';
+    }
 }
 
 // Update this constant based on the analysis results
@@ -757,94 +733,86 @@ function findBestVantiroMatch(categoryAverages) {
 }
 
 function displayResult() {
-    console.log("=== Starting displayResult ===");
-    
-    const averages = calculateScores();
-    console.log("Calculated averages:", averages);
-    
-    const matchResult = findBestVantiroMatch(averages.categories);
-    console.log("Match result:", matchResult);
-
-    if (!matchResult || !matchResult.type) {
-        console.error("No valid Vantiro match found");
-        const resultSection = document.getElementById('result-section');
-        if (resultSection) {
-            resultSection.innerHTML = `
-                <h3>Unable to determine Vantiro type</h3>
-                <p>Please try answering more questions for a more accurate result.</p>
-            `;
-        }
-        return;
-    }
-
-    // Safely hide quiz section if it exists
-    const quizSection = document.querySelector('.question-section');
-    if (quizSection) {
-        quizSection.style.display = 'none';
-    }
-    
-    // Extract the Vantiro number from the type (e.g., "Vantiro-6" -> 6)
-    const vantiroNumber = parseInt(matchResult.type.split('-')[1]);
-    
-    // Create the results HTML
     const resultSection = document.getElementById('result-section');
-    if (!resultSection) {
-        console.error("Result section not found");
-        return;
-    }
-
     resultSection.innerHTML = `
-        <div class="results-container">
-            <div class="results-text">
-                <h3>You Are: ${matchResult.type}</h3>
-                <p class="confidence">Confidence: ${Math.round(matchResult.confidence)}%</p>
-                <p class="type-description">${cards[matchResult.type]?.description || 'Description not available.'}</p>
+        <h2 class="results-header">Your Character</h2>
+        <section class="scores-section">
+            <div class="scores-container">
+                <div class="category-scores">
+                    <h2 class="column-header">How You Behave</h2>
+                    ${Object.entries(scores)
+                        .sort(([,a], [,b]) => (b.total/b.count) - (a.total/a.count))
+                        .map(([category, data]) => {
+                            const score = data.count > 0 ? data.total / data.count : 0;
+                            return `
+                                <div class="score-item">
+                                    <div class="score-label">${formatLabel(category)}</div>
+                                    <div class="score-bar-container">
+                                        <div class="score-bar" style="width: ${(score/5)*100}%; background: gold;"></div>
+                                    </div>
+                                    <div class="score-value">${score.toFixed(1)}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                </div>
+                <div class="lean-scores">
+                    <h2 class="column-header">What You Value</h2>
+                    ${Object.entries(leanScores)
+                        .sort(([,a], [,b]) => (b.total/b.count) - (a.total/a.count))
+                        .map(([lean, data]) => {
+                            const score = data.count > 0 ? data.total / data.count : 0;
+                            return `
+                                <div class="score-item">
+                                    <div class="score-label">${formatLabel(lean)}</div>
+                                    <div class="score-bar-container">
+                                        <div class="score-bar" style="width: ${(score/5)*100}%; background: #4caf50;"></div>
+                                    </div>
+                                    <div class="score-value">${score.toFixed(1)}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                </div>
             </div>
-            <div class="results-image">
-                <img id="gallery-img" src="" alt="Vantiro Type Illustration">
+        </section>
+
+        <section class="matches-section">
+            <h2>Types: Best Matches</h2>
+            <div class="vantiro-matches">
+                ${findTopThreeMatches(calculateScores().categories)
+                    .map(match => {
+                        const vantiroNumber = match.type.split('-')[1];
+                        const imageNumber = Math.floor(Math.random() * 7) + 1;
+                        return `
+                            <div class="vantiro-card" data-vantiro="${match.type}">
+                                <div class="image-container">
+                                    <img src="Vantiro-${vantiroNumber}/image${imageNumber}.png"
+                                        alt="${match.type}"
+                                        loading="lazy"
+                                        onerror="this.style.display='none'"
+                                        onload="this.style.opacity='1'">
+                                </div>
+                                <div class="confidence">Match Confidence: ${Math.round(match.confidence)}%</div>
+                                <div class="details">
+                                    <h3>${match.type}</h3>
+                                    <p>${cards[match.type]?.description || 'Description not available.'}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
             </div>
-        </div>
-        <div class="visualization-container">
-            <div id="p5-canvas"></div>
-            <div class="shishiq-info">
-                <h3>Shishiq Analysis</h3>
-                <p>${cards[matchResult.type]?.shishiq || 'Shishiq information not available.'}</p>
-            </div>
-        </div>
+        </section>
     `;
-    
-    resultSection.style.display = 'block';
 
-    // Try to load gallery images
-    try {
-        loadGalleryImages(matchResult.type);
-    } catch (err) {
-        console.error("Error loading gallery images:", err);
-    }
+    // Hide quiz section and show results
+    fadeOut('quiz-section', () => {
+        fadeIn('result-section');
+    });
 
-    // Initialize p5 sketch
-    new p5((p) => {
-        p.setup = () => {
-            const canvas = p.createCanvas(800, 400);
-            canvas.parent('p5-canvas');
-            p.background(240);
-            p.noLoop();
-        };
-
-        p.draw = () => {
-            p.background(240);
-            p.fill(100);
-            p.noStroke();
-            
-            const diameter = 40;
-            const spacing = 60;
-            const startX = (p.width - (vantiroNumber * spacing - (spacing - diameter))) / 2;
-            const y = p.height / 2;
-            
-            for (let i = 0; i < vantiroNumber; i++) {
-                p.circle(startX + (i * spacing), y, diameter);
-            }
-        };
+    // Add click handlers for Vantiro cards
+    document.querySelectorAll('.vantiro-card').forEach(card => {
+        card.addEventListener('click', function() {
+            this.classList.toggle('expanded');
+        });
     });
 }
 
@@ -1061,55 +1029,69 @@ document.getElementById('next-button').onclick = function() {
 function optimizeQuestionOrder(questions) {
     console.log("Starting question optimization with", questions.length, "questions");
     
-    // Create a working copy of questions
     let workingQuestions = [...questions];
     let optimizedOrder = [];
     
-    // First, identify questions that cover our missing categories and leans
-    const criticalQuestions = workingQuestions.filter(q => {
-        const hasCriticalCategory = q.category.some(cat => 
-            ['emotions', 'perceptual'].includes(cat));
-        const hasCriticalLean = Array.isArray(q.lean) && q.lean.some(lean => 
-            ['bravery', 'creativity', 'gratitude', 'hope', 'kindness', 
-             'leadership', 'perseverance', 'spirituality'].includes(lean));
-        return hasCriticalCategory || hasCriticalLean;
-    });
-
-    // Remove critical questions from working set
-    workingQuestions = workingQuestions.filter(q => 
-        !criticalQuestions.some(cq => cq.id === q.id));
-
-    // Sort critical questions by coverage score
-    criticalQuestions.sort((a, b) => getCriticalScore(b) - getCriticalScore(a));
-
-    // Take first 12 critical questions
-    const selectedCritical = criticalQuestions.slice(0, 12);
-    const remainingCritical = criticalQuestions.slice(12);
+    // Track coverage
+    let coveredCategories = new Set();
+    let coveredLeans = new Set();
     
-    // Interleave critical and regular questions for first 24
-    for (let i = 0; i < 24; i++) {
-        if (i % 2 === 0 && selectedCritical.length > 0) {
-            optimizedOrder.push(selectedCritical.shift());
-        } else if (workingQuestions.length > 0) {
-            optimizedOrder.push(workingQuestions.shift());
+    // Critical leans that must be covered early
+    const criticalLeans = ['zest', 'bravery', 'creativity', 'gratitude', 'hope', 
+                          'kindness', 'leadership', 'perseverance', 'spirituality'];
+    
+    // Helper function to calculate coverage score
+    function getCoverageScore(question) {
+        let score = 0;
+        
+        // Prioritize questions that cover critical leans
+        if (Array.isArray(question.lean)) {
+            question.lean.forEach(lean => {
+                if (!coveredLeans.has(lean)) {
+                    score += criticalLeans.includes(lean) ? 3 : 1;
+                }
+            });
+        }
+        
+        // Add score for uncovered categories
+        question.category.forEach(cat => {
+            if (!coveredCategories.has(cat)) {
+                score += 2;
+            }
+        });
+        
+        return score;
+    }
+    
+    // First pass: Select questions that provide best coverage
+    while (workingQuestions.length > 0 && 
+           (coveredCategories.size < 15 || coveredLeans.size < 24 || 
+            optimizedOrder.length < 21)) {
+        
+        // Sort remaining questions by coverage score
+        workingQuestions.sort((a, b) => getCoverageScore(b) - getCoverageScore(a));
+        
+        // Take the best question
+        const bestQuestion = workingQuestions.shift();
+        optimizedOrder.push(bestQuestion);
+        
+        // Update coverage
+        bestQuestion.category.forEach(cat => coveredCategories.add(cat));
+        if (Array.isArray(bestQuestion.lean)) {
+            bestQuestion.lean.forEach(lean => coveredLeans.add(lean));
+        }
+        
+        // Log coverage after each selection
+        if (optimizedOrder.length <= 21) {
+            console.log(`Question ${optimizedOrder.length} coverage:`,
+                `Categories: ${coveredCategories.size}/15,`,
+                `Leans: ${coveredLeans.size}/24`);
         }
     }
-
-    // Add ALL remaining questions
-    optimizedOrder = [
-        ...optimizedOrder,
-        ...selectedCritical,
-        ...remainingCritical,
-        ...workingQuestions
-    ];
-
-    console.log("Optimization complete. Final question count:", optimizedOrder.length);
     
-    // Verify we haven't lost any questions
-    if (optimizedOrder.length !== questions.length) {
-        console.error(`Question count mismatch! Started with ${questions.length}, ended with ${optimizedOrder.length}`);
-    }
-
+    // Add remaining questions
+    optimizedOrder = [...optimizedOrder, ...workingQuestions];
+    
     return optimizedOrder;
 }
 
@@ -1477,6 +1459,80 @@ document.getElementById('continue-btn').addEventListener('click', function() {
 document.getElementById('ready-btn').addEventListener('click', function() {
     fadeOut('second-section', function() {
         fadeIn('quiz-section');
+        displayQuestion(currentQuestion);
     });
 });
+
+// Helper function for formatting labels
+function formatLabel(str) {
+    return str
+        // Add space before capital letters
+        .replace(/([A-Z])/g, ' $1')
+        // Capitalize first letter
+        .replace(/^./, str => str.toUpperCase())
+        // Trim any extra spaces
+        .trim();
+}
+
+function findTopThreeMatches(categoryAverages) {
+    let matches = [];
+    
+    for (const [vantiroType, ranges] of Object.entries(vantiroRanges)) {
+        let currentDeviance = 0;
+        let categoriesChecked = 0;
+
+        for (const [category, range] of Object.entries(ranges)) {
+            if (categoryAverages[category]) {
+                const score = categoryAverages[category];
+                categoriesChecked++;
+                
+                // Calculate how far the score is from the ideal range
+                if (score < range.min) {
+                    currentDeviance += range.min - score;
+                } else if (score > range.max) {
+                    currentDeviance += score - range.max;
+                } else {
+                    // Add smaller penalty for distance from midpoint when within range
+                    const midpoint = (range.min + range.max) / 2;
+                    currentDeviance += Math.abs(score - midpoint) * 0.5;
+                }
+            }
+        }
+
+        const avgDeviance = categoriesChecked > 0 ? currentDeviance / categoriesChecked : Infinity;
+        const maxPossibleDeviance = categoriesChecked * 4;
+        const confidence = Math.max(0, Math.min(100, 
+            (1 - (currentDeviance / maxPossibleDeviance)) * 100 * 0.8
+        ));
+
+        matches.push({
+            type: vantiroType,
+            deviance: avgDeviance,
+            confidence: confidence
+        });
+    }
+
+    // Sort by lowest deviance and return top 3
+    return matches
+        .sort((a, b) => a.deviance - b.deviance)
+        .slice(0, 3);
+}
+
+function getVantiroDescription(vantiroType) {
+    const descriptions = {
+        'Vantiro-1': 'Analytical and goal-oriented, focused on efficiency and results.',
+        'Vantiro-2': 'Adventurous and adaptable, with broad interests and playful nature.',
+        'Vantiro-3': 'Empathetic and reflective, valuing deep connections and emotional awareness.',
+        'Vantiro-4': 'Strategic and intellectual, with high drive and analytical thinking.',
+        'Vantiro-5': 'Independent and focused, with strong personal convictions.',
+        'Vantiro-6': 'Creative and philosophical, with broad interests and deep thinking.',
+        'Vantiro-7': 'Investigative and adaptable, with strong learning orientation.',
+        'Vantiro-8': 'Diplomatic and empathetic, with strong interpersonal skills.',
+        'Vantiro-9': 'Supportive and intuitive, with deep emotional awareness.',
+        'Vantiro-10': 'Creative and playful, with broad interests and openness.',
+        'Vantiro-11': 'Protective and reliable, with strong principles.',
+        'Vantiro-12': 'Systematic and analytical, with strong goal orientation.'
+    };
+    return descriptions[vantiroType] || 'Description not available';
+}
 

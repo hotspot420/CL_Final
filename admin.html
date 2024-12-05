@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz Results Admin</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: var(--dark-brown);
+            color: var(--light-text);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz Results</h1>
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Final Vantiro</th>
+                    <th>Confidence</th>
+                    <th>Category Scores</th>
+                    <th>Lean Scores</th>
+                </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchResults() {
+            try {
+                const response = await fetch('http://your-server-url/api/results');
+                const results = await response.json();
+                
+                const tbody = document.getElementById('results-body');
+                tbody.innerHTML = '';
+                
+                results.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(result.timestamp).toLocaleString()}</td>
+                        <td>${result.finalVantiro}</td>
+                        <td>${result.confidence.toFixed(2)}%</td>
+                        <td>${JSON.stringify(result.categoryScores, null, 2)}</td>
+                        <td>${JSON.stringify(Object.fromEntries(result.leanScores), null, 2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching results:', error);
+            }
+        }
+
+        // Fetch results on page load
+        fetchResults();
+    </script>
+</body>
+</html>

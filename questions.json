@@ -8,7 +8,7 @@
     },
     {
         "id": 2,
-        "question": "I have spent a lot of time with people who face very different challenges from mine.",
+        "question": "I have spent a lot of time with people who face very different life challenges than me.",
         "category": ["openness", "interestBreadth"],
         "lean": "",
         "flag": "diversityExp"
@@ -29,35 +29,35 @@
     },
     {
         "id": 5,
-        "question": "I feel okay being around people who have very different beliefs from mine.",
+        "question": "I feel okay being around people whose beliefs are very different from mine.",
         "category": ["flexibility", "openness", "selfAdvocacy"],
         "lean": "",
         "flag": "openToControversy"
     },
     {
         "id": 6,
-        "question": "I would like to meet and talk with people who have views that challenge my own.",
+        "question": "I am interested in meeting and talking with people who have views that challenge my own.",
         "category": ["flexibility", "interestBreadth", "openness"],
         "lean": ["curiosity", "judgment", "loveOfLearning", "perspective", "socialIntelligence"],
         "flag": "openToControversy"
     },
     {
         "id": 7,
-        "question": "When I search for information, I try to look at different perspectives and sources.",
+        "question": "When I search for information, I try to intentionally look at perspectives and sources that are different from my own.",
         "category": ["flexibility", "selfAwareness"],
         "lean": "",
         "flag": ""
     },
     {
         "id": 8,
-        "question": "I am okay with people debating my ideas, even if it gets intense.",
+        "question": "I am comfortable with people debating my views, even if it gets intense.",
         "category": ["selfAdvocacy", "flexibility"],
         "lean": "",
         "flag": "openToControversy"
     },
     {
         "id": 9,
-        "question": "I enjoy edgy or controversial humor even if it might offend some people.",
+        "question": "I enjoy edgy or controversial humor, even if it might offend some people.",
         "category": ["interpersonalStyle"],
         "lean": "",
         "": "",
@@ -65,7 +65,7 @@
     },
     {
         "id": 10,
-        "question": "I wouldn't feel comfortable spending time with someone who makes jokes that others might find offensive.",
+        "question": "I do not feel comfortable when people make jokes that others might find offensive.",
         "category": ["interpersonalStyle"],
         "lean": ["fairness", "forgiveness", "humor", "perspective", "prudence", "selfRegulation"],
         "": "",
@@ -80,7 +80,7 @@
     },
     {
         "id": 12,
-        "question": "I rarely make things sound more urgent or more important than they really are.",
+        "question": "I rarely make things sound more urgent or important than they really are.",
         "category": ["flexibility", "selfAwareness", "interpersonalStyle", "selfEsteem"],
         "lean": "",
         "": "",
@@ -88,7 +88,7 @@
     },
     {
         "id": 13,
-        "question": "When someone disagrees with me, I'm eager to understand their perspective rather than defend my own",
+        "question": "When someone disagrees with me, my first instinct is to understand their perspective, rather than defend my own",
         "category": ["flexibility", "openness", "collaboration"],
         "lean": ["humility", "perspective", "judgment"],
         "flag": "bw"
@@ -119,7 +119,7 @@
     },
     {
         "id": 17,
-        "question": "I want my friends and community to have a lot of different beliefs and opinions.",
+        "question": "I think it's important for my friends and close community to have a lot of different beliefs and opinions.",
         "category": ["interestBreadth", "openness", "collaboration", "selfAwareness"],
         "lean": ["curiosity", "humility", "loveOfLearning", "perspective", "socialIntelligence", "teamwork"],
         "": "",
@@ -150,7 +150,7 @@
     },
     {
         "id": 21,
-        "question": "My favorite social activities involve playing, dreaming, and experiencing things together.",
+        "question": "My favorite social activities involve playing, dreaming, and experiencing things with other people, rather than working on a project together.",
         "category": ["interpersonalStyle", "openness", "drive", "playfulness"],
         "lean": "",
         "": "",
