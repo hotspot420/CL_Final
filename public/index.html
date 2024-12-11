@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's Already There</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="main-header">
+            <h1>What's Already There</h1>
+            <h2>A game about nothing in particular</h2>
+        </header>
+
+        <main>
+            <h3 class="character-header">Your Character</h3>
+            
+            <div class="content-container">
+                <!-- Introduction Section -->
+                <div id="intro-section" class="fade-section active">
+                    <p>To build your character, answer at least 21 of the following questions. The more questions you answer, the more your character will resemble you. This website does not store any data after you exit the page. If you leave the page, your character will be lost and you will need to answer the questions again.</p>
+                    <button id="continue-btn" class="styled-button">Continue</button>
+                </div>
+
+                <!-- Second Section -->
+                <div id="second-section" class="fade-section">
+                    <p>Once you've answered the questions, you will find yourself in a house with any number of other people, or you may be alone. The house will change if other players come and go. It responds to all of you, and also to you alone. You will receive more instructions after you've submitted your questions.</p>
+                    <button id="ready-btn" class="styled-button">I'm Ready</button>
+                </div>
+
+                <!-- Quiz Section -->
+                <div id="quiz-section" class="fade-section">
+                    <div class="progress-bar-container">
+                        <label for="progress-bar">Progress:</label>
+                        <div class="minimum-marker"></div>
+                        <progress id="progress-bar" class="incomplete" value="0" max="70"></progress>
+                        <span id="progress-text">0/70</span>
+                    </div>
+                    <div id="question-container"></div>
+                    <div class="button-container">
+                        <button id="back-button" class="nav-button" disabled>Back</button>
+                        <button id="next-button" class="nav-button">Next</button>
+                        <button id="see-results-button" class="nav-button" style="display: none;">See Results</button>
+                    </div>
+                </div>
+
+                <!-- Result Section -->
+                <div id="result-section" class="fade-section">
+                    <!-- Content will be dynamically inserted by JavaScript -->
+                </div>
+
+                <!-- Add this after your result-section div -->
+                <div id="game-container" style="display: none;">
+                    <div id="game-instructions" class="fade-section">
+                        <p>Click any tile to move your character. Each player can move up to 4 tiles per turn, with 20 seconds between turns when multiple players are present. If you're the only player, you can move freely.</p>
+                        <p>Some tiles are special trigger tiles that will activate when you land on them.</p>
+                    </div>
+                    
+                    <div class="game-layout">
+                        <div id="game-section"></div>
+                        <div class="side-columns">
+                            <div id="players-section">
+                                <h3>Players</h3>
+                                <div id="player-list"></div>
+                            </div>
+                            <div id="prompt-section">
+                                <h3>Current Prompt</h3>
+                                <div id="prompt-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="chat-section">
+                        <div id="chat-messages"></div>
+                        <input type="text" id="chat-input" placeholder="Type your message...">
+                    </div>
+                    
+                    <div id="scores-container">
+                        <!-- Scores will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="game.js?v=1"></script>
+</body>
+</html>

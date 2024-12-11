@@ -1,0 +1,13 @@
+[
+    {
+        "id": "hello", 
+        "category": "hi", 
+        "leans": "hello",
+        "level1Prompt": "hello", 
+        "level2Prompt": "hello", 
+        "level3Prompt": "hello",
+        "yesFlags": "",
+        "noFlags": "",
+        "resources": ""
+    }
+]
