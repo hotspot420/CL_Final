@@ -5,37 +5,46 @@ const io = require('socket.io')(http);
 const path = require('path');
 const fs = require('fs');
 
-// Add logging middleware
+// Serve static files from the 'public' directory with proper MIME types
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, filepath) => {
+        // Set proper content types for different file extensions
+        if (filepath.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        } else if (filepath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        } else if (filepath.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json');
+        }
+        // Disable caching during development
+        res.setHeader('Cache-Control', 'no-store');
+    }
+}));
+
+// Keep the logging middleware but move it after static file serving
 app.use((req, res, next) => {
     console.log('Request for:', req.path);
-    res.setHeader('Cache-Control', 'no-store');
     next();
 });
 
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Add a specific route for list.json files
+// Keep the Vantiro image handling route
 app.get('/Vantiro-:num/list.json', (req, res) => {
     const vantiroNum = req.params.num;
     const dirPath = path.join(__dirname, 'public', 'images', `Vantiro-${vantiroNum}`);
     
     console.log('Checking directory:', dirPath);
     
-    // Check if directory exists
     if (!fs.existsSync(dirPath)) {
         console.error('Directory not found:', dirPath);
         return res.status(404).send('Directory not found');
     }
     
-    // Read directory and filter for image files
     fs.readdir(dirPath, (err, files) => {
         if (err) {
             console.error('Error reading directory:', err);
             return res.status(500).send('Error reading directory');
         }
         
-        // Filter for image files
         const imageFiles = files.filter(file => 
             file.match(/\.(png|jpg|jpeg)$/i)
         ).sort();
